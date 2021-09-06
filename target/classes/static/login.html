@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!--<html lang="en">-->
+<script src="webjars/jquery/3.5.1/jquery.min.js"></script>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<form id="loginForm" action="/login" method="post">
+    用户名：<input type="text" id="username" name="username"/><br/>
+    密码：<input type="password" id="password" name="password"/><br/>
+<!--    <input type="submit" id="loginButton" value="登录" />-->
+    <input type="button" id="loginButton" value="登录" />
+</form>
+
+</body>
+<script>
+    $(function () {
+        var form = $("#loginForm");
+
+        var params = {};
+
+        $("#loginButton").click(function () {
+            params.username = $("#username").val();
+            params.password = $("#password").val();
+            $.ajax({
+                type: "post",
+                url: "http://localhost:8080/login",
+                data: params,
+                dataType: "json",
+                contentType: "application/x-www-form-urlencoded",
+                success: function (data) {
+                    // if (data === "false") {
+                    //     alert("抢光了");
+                    //     $("#miaosha_btn").attr("disabled", true);
+                    // }
+                    if (data.code === "00000") {
+                        alert(data.message);
+                        $("#miaosha_btn").attr("disabled", true);
+                    } else if (data.code === "50000") {
+                        alert(data.message);
+                    }
+                }
+            })
+        })
+
+    })
+</script>
+</html>
