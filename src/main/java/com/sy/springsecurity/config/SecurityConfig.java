@@ -1,16 +1,12 @@
 package com.sy.springsecurity.config;
 
-import com.alibaba.fastjson.JSONException;
-import com.alibaba.fastjson.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
@@ -18,14 +14,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.AuthenticationEntryPointFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import javax.sql.DataSource;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,6 +32,11 @@ import java.util.Set;
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private PersistentTokenRepository persistentTokenRepository;
 
     //@Override
     //protected AuthenticationManager authenticationManager() throws Exception {
@@ -67,10 +64,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     public void configure(WebSecurity web) throws Exception {
         super.configure(web);
-        //web.ignoring().antMatchers(
-        //        //"/login.html",
-        //        "/webjar/**"
-        //);
     }
 
     /**
@@ -82,65 +75,115 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         //表单提交
+        http.formLogin()
+                //自定义用户名参数，必须与form中的name一样
+                //.usernameParameter("username")
+                //自定义密码参数，必须与form中的name一样
+                //.passwordParameter("password")
+                //自定义登录页面
+                .loginPage("/showLogin")
+                //必须和表单提交的接口一样，会去执行自定义登录逻辑
+                .loginProcessingUrl("/login")
+                //登录成功后跳转的页面，必须是post请求
+                .successForwardUrl("/toMain")
+                //自定义登录成功后的处理器，进行重定。
+                //.successHandler(new MyAuthenticationSuccessHandler("/main.html"))
+                //登录失败后跳转的页面，必须是post请求
+                .failureForwardUrl("/toError");
+                //自定义登录失败后的处理器，进行重定。
+                //.failureHandler(new MyAuthenticationFailureHandler("/error.html"));
+
+        //ajax提交
         //http.formLogin()
+        //        //自定义用户名参数，必须与form中的name一样
+        //        .usernameParameter("username")
+        //        //自定义密码参数，必须与form中的name一样
+        //        .passwordParameter("password")
         //        //自定义登录页面
         //        .loginPage("/login.html")
         //        //必须和表单提交的接口一样，会去执行自定义登录逻辑
         //        .loginProcessingUrl("/login")
-        //        //登录成功后跳转的页面，必须是post请求
-        //        .successForwardUrl("/toMain");
-
-        //ajax提交
-        http.formLogin()
-                //自定义登录页面
-                .loginPage("/login.html")
-                //必须和表单提交的接口一样，会去执行自定义登录逻辑
-                .loginProcessingUrl("/login")
-                ////配置自定义登录验证成功的处理，这里我们返回json数据
-                .successHandler(new AuthenticationSuccessHandler() {
-                    @Override
-                    public void onAuthenticationSuccess(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Authentication authentication) throws IOException, ServletException {
-                        JSONObject returnObj = new JSONObject();
-                        try {
-                            returnObj.put("code", "00000");
-                            returnObj.put("message", "登录成功");
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                        httpServletResponse.setContentType("application/json;charset=utf-8");
-                        httpServletResponse.getWriter().print(returnObj.toString());
-                        httpServletResponse.getWriter().flush();
-                    }
-                })
-                //登录验证失败的处理
-                .failureHandler(new AuthenticationFailureHandler() {
-                    @Override
-                    public void onAuthenticationFailure(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, AuthenticationException e) throws IOException, ServletException {
-                        JSONObject returnObj = new JSONObject();
-                        try {
-                            returnObj.put("code", "50000");
-                            returnObj.put("message","账号或者密码有误！" );
-                        } catch (JSONException e1) {
-                            e1.printStackTrace();
-                        }
-                        httpServletResponse.setContentType("application/json;charset=utf-8");
-                        httpServletResponse.getWriter().print(returnObj.toString());
-                        httpServletResponse.getWriter().flush();
-                    }
-                });
+        //        //自定义登录成功后的处理器，进行重定向到百度。
+        //        //.successHandler(new MyAuthenticationSuccessHandler("http://www.baidu.com"))
+        //        //配置自定义登录验证成功的处理，这里我们返回json数据
+        //        .successHandler(new AuthenticationSuccessHandler() {
+        //            @Override
+        //            public void onAuthenticationSuccess(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Authentication authentication) throws IOException, ServletException {
+        //                JSONObject returnObj = new JSONObject();
+        //                try {
+        //                    returnObj.put("code", "00000");
+        //                    returnObj.put("message", "登录成功");
+        //                } catch (JSONException e) {
+        //                    e.printStackTrace();
+        //                }
+        //                httpServletResponse.setContentType("application/json;charset=utf-8");
+        //                httpServletResponse.getWriter().print(returnObj.toString());
+        //                httpServletResponse.getWriter().flush();
+        //            }
+        //        })
+        //        //登录验证失败的处理
+        //        .failureHandler(new AuthenticationFailureHandler() {
+        //            @Override
+        //            public void onAuthenticationFailure(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, AuthenticationException e) throws IOException, ServletException {
+        //                JSONObject returnObj = new JSONObject();
+        //                try {
+        //                    returnObj.put("code", "50000");
+        //                    returnObj.put("message", "账号或者密码有误！");
+        //                } catch (JSONException e1) {
+        //                    e1.printStackTrace();
+        //                }
+        //                httpServletResponse.setContentType("application/json;charset=utf-8");
+        //                httpServletResponse.getWriter().print(returnObj.toString());
+        //                httpServletResponse.getWriter().flush();
+        //            }
+        //        });
 
 
         //授权
         http.authorizeRequests()
-                //放行 login.html，不需要认证
+                //放行 login.html，不需要认证。ant表达式
                 .antMatchers(
                         "/login.html",
-                        "/webjars/**"
+                        "/error.html",
+                        "/img/**",
+                        "/webjars/**",
+                        "/showLogin"
                 ).permitAll()
-                //所有请求都必须认证才能访问，必须登录
+                //必须是post请求访问demo controller 才放行
+                //.antMatchers(HttpMethod.POST,"/demo").permitAll()
+                //权限控制，指定权限。在自定义逻辑中设置的,严格区分大小写
+                //.antMatchers("/main1.html").hasAuthority("admin")
+                ////多个权限
+                //.antMatchers("/main1.html").hasAnyAuthority("admin", "admiN")
+                //权限控制，指定角色。在自定义逻辑中设置的,严格区分大小写
+                //.antMatchers("/main1.html").hasRole("abc")
+                //多个角色
+                //.antMatchers("/main1.html").hasAnyRole("abc", "abC")
+                //基于IP地址
+                //.antMatchers("/main1.html").hasIpAddress("192.168.111.2")
+                //所有请求都必须认证才能访问，必须登录，必须放在最后面。按顺序执行的
                 .anyRequest().authenticated();
+                //自定义 access 方法
+                //.anyRequest().access("@myServiceImpl.hasPermission(request,authentication)");
 
-        //关闭csrf防护
+        //记住我设置
+        http.rememberMe()
+                //设置数据源
+                .tokenRepository(persistentTokenRepository)
+                //超时时间
+                .tokenValiditySeconds(60)
+                //自定义登录逻辑
+                .userDetailsService(userDetailsService());
+
+        //退出
+        http.logout()
+                //自定义退出请求接口
+                .logoutUrl("/logout")
+                //退出成功返回的地址，和自定页面设置的一样
+                .logoutSuccessUrl("/showLogin");
+
+
+        //关闭csrf防护，关闭的话需要在页面发送token
         http.csrf().disable();
     }
 
@@ -151,6 +194,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public PersistentTokenRepository persistentTokenRepository() {
+        JdbcTokenRepositoryImpl jdbcTokenRepository = new JdbcTokenRepositoryImpl();
+        //设置数据源
+        jdbcTokenRepository.setDataSource(dataSource);
+        //自动建表,第一次启动开启，第二次启动注释掉
+        //jdbcTokenRepository.setCreateTableOnStartup(true);
+        return jdbcTokenRepository;
+
     }
 
     @Override
@@ -166,6 +220,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             Set<String> dbAuthsSet = new HashSet<>();
             dbAuthsSet.add("admin");
             dbAuthsSet.add("user");
+            //设置角色，必须 ROLE_ 开头，硬性要求
+            dbAuthsSet.add("ROLE_abc");
+            // 配合自定义access方法使用
+            dbAuthsSet.add("/main.html");
 
             //3.将权限信息等转换为List，传入 security 的 User。
             List<GrantedAuthority> authorities = AuthorityUtils.createAuthorityList(dbAuthsSet.toArray(new String[]{}));

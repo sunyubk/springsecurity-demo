@@ -8,9 +8,9 @@
 </head>
 <body>
 <form id="loginForm" action="/login" method="post">
+    <input type="hidden" name="_csrf" th:value="${_csrf.token}" th:if="${_csrf}">
     用户名：<input type="text" id="username" name="username"/><br/>
     密码：<input type="password" id="password" name="password"/><br/>
-    记住我：<input type="checkbox" name="remember-me" value="true"/><br/>
     <input type="submit" id="loginButton" value="登录" />
 <!--    <img src="img/a.png">-->
 <!--    <input type="button" id="loginButton" value="登录" />-->

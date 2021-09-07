@@ -1,0 +1,45 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/security?serverTimezone=GMT%2B8&useUnicode=true&characterEncoding=UTF-8&useOldAliasMetadataBehavior=true&allowMultiQueries=true
+    username: root
+    #    password: root
+    password: root
+    type: com.alibaba.druid.pool.DruidDataSource
+    # druid 数据源其他配置
+    druid:
+      initialSize: 5
+      minIdle: 3
+      maxActive: 20
+      maxWait: 60000
+      timeBetweenEvictionRunsMillis: 60000
+      minEvictableIdleTimeMillis: 300000
+      validationQuery: SELECT 1 FROM DUAL
+      testWhileIdle: true
+      testOnBorrow: false
+      testOnReturn: false
+      filters: stat
+      useGlobalDataSourceStat: true
+      connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=500
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+mybatis-plus:
+  mapper-locations: classpath*:/mybatis/mapper/*.xml
+  #  mapper.xml 中实体可以不带报名,直接使用bean的名字
+  #  type-aliases-package: com.sy.api.beans
+  type-aliases-package: com.sy.api.beans
+  global-config:
+    enable-sql-runner: true
+    db-config:
+      id-type: id_worker_str
+      #      数据库大写下划线装换
+      capital-mode: true
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

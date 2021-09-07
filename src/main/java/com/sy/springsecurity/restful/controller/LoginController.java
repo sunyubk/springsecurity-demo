@@ -1,6 +1,7 @@
 package com.sy.springsecurity.restful.controller;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,8 +17,27 @@ import org.springframework.web.bind.annotation.RestController;
 //@RequestMapping("/login")
 public class LoginController {
 
+    /**
+     * 登录成功后的页面
+     * @return String
+     */
     @RequestMapping("/toMain")
     public String toMain() {
         return "redirect:main.html";
+    }
+
+    /**
+     * 登录失败后的页面
+     * @return String
+     */
+    @RequestMapping("/toError")
+    public String toError() {
+        return "redirect:error.html";
+    }
+
+
+    @RequestMapping("/showLogin")
+    public String showLogin() {
+        return "login";
     }
 }
